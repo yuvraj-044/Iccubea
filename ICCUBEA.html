@@ -1,0 +1,1788 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PCCOE Campus Smart Navigator</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Cormorant+Garamond:wght@600;700&display=swap"
+    rel="stylesheet">
+  <!-- Firebase SDK (Realtime Database only — no Auth needed) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <style>
+    :root {
+      --primary: #3f6b4b;
+      --primary-hover: #33563d;
+      --secondary: #9a6a3a;
+      --secondary-hover: #7f552d;
+      --accent: #d8c3a5;
+      --danger: #b4513c;
+      --danger-hover: #953f2f;
+      --bg-color: #f3ede2;
+      --bg-deep: #d9ccb6;
+      --panel-bg: rgba(255, 251, 243, 0.72);
+      --panel-strong: rgba(250, 244, 233, 0.9);
+      --border-color: rgba(92, 74, 52, 0.16);
+      --text-main: #2d241c;
+      --text-muted: #756553;
+      --shadow-soft: 0 24px 70px rgba(74, 55, 34, 0.14);
+      --shadow-card: 0 18px 40px rgba(67, 52, 35, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Manrope', system-ui, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      background-image:
+        radial-gradient(circle at 10% 15%, rgba(111, 150, 123, 0.24) 0%, transparent 28%),
+        radial-gradient(circle at 85% 20%, rgba(214, 184, 138, 0.33) 0%, transparent 30%),
+        radial-gradient(circle at 50% 100%, rgba(117, 143, 126, 0.18) 0%, transparent 34%),
+        linear-gradient(135deg, #f6f0e5 0%, #ede4d2 45%, #e5dac4 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: auto;
+      pointer-events: none;
+      z-index: 0;
+      filter: blur(8px);
+    }
+
+    body::before {
+      top: 70px;
+      right: -60px;
+      width: 280px;
+      height: 280px;
+      border-radius: 44% 56% 60% 40%;
+      background: rgba(133, 161, 137, 0.24);
+    }
+
+    body::after {
+      left: -90px;
+      bottom: 40px;
+      width: 340px;
+      height: 340px;
+      border-radius: 58% 42% 48% 52%;
+      background: rgba(201, 173, 130, 0.18);
+    }
+
+    /* Glassmorphism Utilities */
+    .glass {
+      background: var(--panel-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-card);
+    }
+
+    /* Login card transparent glass override */
+    .login-card.glass {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255,255,255,0.15);
+    }
+
+    /* --- LOGIN OVERLAY --- */
+    #loginOverlay {
+      position: fixed;
+      inset: 0;
+      background-image: url('data:image/webp;base64,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');
+      background-size: cover;
+      background-position: center center;
+      background-repeat: no-repeat;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.4s ease, visibility 0.4s;
+    }
+    #loginOverlay::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(15, 30, 20, 0.58), rgba(20, 45, 65, 0.52));
+      z-index: 0;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 470px;
+      padding: 42px;
+      border-radius: 28px;
+      text-align: left;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.36);
+      animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      position: relative;
+      z-index: 1;
+      overflow: hidden;
+    }
+
+    .login-card::before {
+      content: "";
+      position: absolute;
+      top: -70px;
+      right: -50px;
+      width: 170px;
+      height: 170px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(111, 150, 123, 0.3), transparent 70%);
+      pointer-events: none;
+    }
+
+    .login-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(63, 107, 75, 0.12);
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+
+    .login-card h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(2.4rem, 4vw, 3.4rem);
+      line-height: 0.95;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #fff8ef;
+    }
+
+    .login-card p {
+      color: rgba(255, 248, 239, 0.78);
+      margin-bottom: 24px;
+      font-size: clamp(0.98rem, 1.5vw, 1.08rem);
+      line-height: 1.7;
+      max-width: 340px;
+    }
+
+    .login-highlights {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .login-form {
+      margin-bottom: 16px;
+    }
+
+    .login-form input {
+      width: 100%;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 248, 239, 0.35);
+      background: rgba(255, 248, 239, 0.12);
+      color: #fff8ef;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .login-form input::placeholder {
+      color: rgba(255, 248, 239, 0.58);
+    }
+
+    .login-form input:focus {
+      border-color: rgba(255, 248, 239, 0.75);
+      box-shadow: 0 0 0 3px rgba(255, 248, 239, 0.16);
+    }
+
+    .login-error {
+      min-height: 20px;
+      margin-bottom: 10px;
+      color: #ffd2c6;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .login-highlight {
+      padding: 14px 12px;
+      border-radius: 18px;
+      background: rgba(255, 248, 239, 0.08);
+      border: 1px solid rgba(255, 248, 239, 0.1);
+      color: rgba(255, 248, 239, 0.88);
+      font-size: clamp(0.82rem, 1.2vw, 0.92rem);
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .role-btn {
+      width: 100%;
+      padding: 15px 18px;
+      margin-bottom: 14px;
+      border: none;
+      border-radius: 16px;
+      font-size: clamp(1rem, 1.5vw, 1.12rem);
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      letter-spacing: 0.01em;
+    }
+
+    .btn-admin {
+      background: linear-gradient(135deg, var(--primary), #54775d);
+      box-shadow: 0 12px 30px rgba(63, 107, 75, 0.28);
+    }
+
+    .btn-admin:hover {
+      transform: translateY(-2px) scale(1.01);
+      box-shadow: 0 18px 34px rgba(63, 107, 75, 0.34);
+    }
+
+    .btn-user {
+      background: linear-gradient(135deg, #1a6fa8, #2589cc);
+      box-shadow: 0 12px 30px rgba(26, 111, 168, 0.38);
+    }
+
+    .btn-user:hover {
+      transform: translateY(-2px) scale(1.01);
+      box-shadow: 0 18px 34px rgba(26, 111, 168, 0.48);
+      background: linear-gradient(135deg, #15609a, #1a6fa8);
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* --- MAIN APP LAYOUT --- */
+    #appContainer {
+      display: none;
+      /* Hidden until login */
+      flex: 1;
+      flex-direction: column;
+      min-height: 100vh;
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      margin: 18px 18px 0;
+      padding: 18px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-radius: 24px;
+      z-index: 10;
+    }
+
+    header h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(1.85rem, 2.9vw, 2.35rem);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .role-badge {
+      font-size: 12px;
+      padding: 5px 11px;
+      border-radius: 20px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .role-admin {
+      background: rgba(63, 107, 75, 0.12);
+      color: var(--primary);
+      border: 1px solid rgba(63, 107, 75, 0.2);
+    }
+
+    .role-user {
+      background: rgba(154, 106, 58, 0.12);
+      color: var(--secondary);
+      border: 1px solid rgba(154, 106, 58, 0.2);
+    }
+
+    #logoutBtn {
+      background: rgba(255, 255, 255, 0.4);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    #logoutBtn:hover {
+      background: rgba(255, 255, 255, 0.8);
+      color: var(--text-main);
+    }
+
+    .main-content {
+      display: flex;
+      flex: 1;
+      position: relative;
+      padding: 18px;
+      gap: 18px;
+    }
+
+    /* --- SIDEBAR --- */
+    .sidebar {
+      width: 370px;
+      display: flex;
+      flex-direction: column;
+      z-index: 10;
+      background: rgba(253, 248, 240, 0.58);
+      backdrop-filter: blur(20px);
+      position: sticky;
+      top: 18px;
+      left: 0;
+      height: calc(100vh - 36px);
+      border: 1px solid var(--border-color);
+      border-radius: 28px;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .sidebar-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+    }
+
+    /* Custom Scrollbar */
+    .sidebar-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .sidebar-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .sidebar-scroll::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+    }
+
+    .sidebar-scroll::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .sidebar-hero {
+      position: relative;
+      overflow: hidden;
+      padding: 28px;
+      margin-bottom: 20px;
+      border-radius: 24px;
+      background:
+        linear-gradient(160deg, rgba(63, 107, 75, 0.92), rgba(94, 128, 102, 0.78)),
+        linear-gradient(120deg, rgba(255, 255, 255, 0.08), transparent);
+      color: #fff9f1;
+      box-shadow: 0 18px 40px rgba(63, 107, 75, 0.22);
+    }
+
+    .sidebar-hero::after {
+      content: "";
+      position: absolute;
+      right: -30px;
+      top: -30px;
+      width: 140px;
+      height: 140px;
+      border-radius: 42% 58% 64% 36%;
+      background: rgba(255, 248, 239, 0.12);
+    }
+
+    .sidebar-hero h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(2.15rem, 4.2vw, 3.4rem);
+      line-height: 1;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #fff8ef;
+    }
+
+    .sidebar-hero p {
+      position: relative;
+      z-index: 1;
+      font-size: clamp(0.98rem, 1.7vw, 1.16rem);
+      line-height: 1.75;
+      font-weight: 500;
+      color: rgba(255, 248, 239, 0.82);
+      margin-bottom: 18px;
+    }
+
+    .hero-chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-chip {
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255, 248, 239, 0.12);
+      border: 1px solid rgba(255, 248, 239, 0.16);
+      font-size: clamp(0.8rem, 1.2vw, 0.9rem);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .sidebar section {
+      background: rgba(255, 252, 247, 0.78);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 20px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .sidebar section:hover {
+      border-color: rgba(92, 74, 52, 0.24);
+      box-shadow: 0 12px 32px rgba(78, 61, 41, 0.08);
+    }
+
+    .sidebar h2 {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sidebar h2::before {
+      content: '';
+      display: block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    input[type="file"],
+    input[type="text"],
+    select {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.75);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 14px 14px;
+      border-radius: 12px;
+      font-size: 15px;
+      margin-bottom: 12px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+    }
+
+    input[type="file"]::file-selector-button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-right: 12px;
+      font-size: 12px;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(63, 107, 75, 0.12);
+      transform: translateY(-1px);
+    }
+
+    select option {
+      background: #fffaf2;
+      color: var(--text-main);
+    }
+
+    button.action-btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--primary), #50745b);
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+      box-shadow: 0 10px 24px rgba(63, 107, 75, 0.18);
+    }
+
+    button.action-btn:hover:not(:disabled) {
+      background: var(--primary-hover);
+      box-shadow: 0 14px 28px rgba(63, 107, 75, 0.24);
+    }
+
+    button.action-btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    button.action-btn.danger {
+      background: rgba(180, 81, 60, 0.12);
+      border: 1px solid var(--danger);
+      color: var(--danger);
+      margin-top: 8px;
+      box-shadow: none;
+    }
+
+    button.action-btn.danger:hover:not(:disabled) {
+      background: var(--danger);
+      color: white;
+    }
+
+    button:disabled,
+    input:disabled,
+    select:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      filter: grayscale(1);
+    }
+
+    small {
+      display: block;
+      color: var(--text-muted);
+      font-size: 12px;
+      line-height: 1.4;
+      margin-top: -4px;
+      margin-bottom: 8px;
+    }
+
+    #log {
+      background: rgba(58, 44, 29, 0.94);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 12px;
+      font-size: 11px;
+      font-family: monospace;
+      color: #d8efda;
+      height: 120px;
+      overflow-y: auto;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    #log::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    #log::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* --- MAP PANEL --- */
+    .map-panel {
+      flex: 1;
+      position: relative;
+      min-height: 680px;
+      background:
+        linear-gradient(180deg, rgba(246, 240, 229, 0.65), rgba(223, 210, 186, 0.72)),
+        radial-gradient(circle at top, rgba(133, 161, 137, 0.26), transparent 40%);
+      cursor: grab;
+      border: 1px solid rgba(92, 74, 52, 0.14);
+      border-radius: 30px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .map-panel:active {
+      cursor: grabbing;
+    }
+
+    .map-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+      background-size: 48px 48px;
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
+    #mapCanvas {
+      display: block;
+      transform-origin: 0 0;
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.18);
+      position: relative;
+      z-index: 1;
+      margin: auto;
+    }
+
+    /* Controls Overlay (Zoom/Mode) */
+    .map-controls {
+      position: absolute;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 20;
+    }
+
+    .map-hint {
+      position: absolute;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 20px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 10px 25px rgba(67, 52, 35, 0.16);
+      z-index: 20;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      animation: pulseHint 2s infinite;
+    }
+
+    .map-empty-state {
+      position: absolute;
+      left: 24px;
+      z-index: 20;
+      max-width: 320px;
+      border-radius: 22px;
+      padding: 18px 18px 16px;
+    }
+
+    .map-empty-state {
+      bottom: 24px;
+    }
+
+    .overlay-label {
+      display: inline-flex;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(63, 107, 75, 0.12);
+      color: var(--primary);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .map-empty-state h3 {
+      font-size: 20px;
+      margin-bottom: 8px;
+      color: var(--text-main);
+    }
+
+    .map-empty-state p {
+      color: var(--text-muted);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .route-meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .route-meta-card {
+      padding: 12px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.58);
+      border: 1px solid var(--border-color);
+    }
+
+    .route-meta-card span {
+      display: block;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .route-meta-card strong {
+      display: block;
+      font-size: 17px;
+      color: var(--text-main);
+    }
+
+    @keyframes pulseHint {
+      0% {
+        box-shadow: 0 0 0 0 rgba(63, 107, 75, 0.24);
+      }
+
+      70% {
+        box-shadow: 0 0 0 10px rgba(63, 107, 75, 0);
+      }
+
+      100% {
+        box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
+      }
+    }
+
+    /* Hide elements based on role */
+    body[data-role="user"] .admin-only {
+      display: none !important;
+    }
+
+    @media (max-width: 1100px) {
+      .main-content {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        position: relative;
+        width: 100%;
+        height: auto;
+        top: 0;
+      }
+
+      .map-panel {
+        min-height: 560px;
+      }
+    }
+
+    @media (max-width: 900px) {
+      header h1 {
+        font-size: 2rem;
+      }
+
+      .sidebar-hero {
+        padding: 24px 22px;
+      }
+
+      .sidebar-hero h2 {
+        font-size: 2.5rem;
+      }
+
+      .sidebar section {
+        padding: 18px;
+      }
+    }
+
+    @media (max-width: 720px) {
+      header {
+        margin: 12px 12px 0;
+        padding: 16px 18px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 14px;
+      }
+
+      header h1 {
+        font-size: 1.78rem;
+        line-height: 1.08;
+        flex-wrap: wrap;
+      }
+
+      #logoutBtn {
+        width: 100%;
+      }
+
+      .main-content {
+        padding: 12px;
+        gap: 12px;
+      }
+
+      .sidebar-scroll {
+        padding: 16px;
+      }
+
+      .login-highlights,
+      .route-meta {
+        grid-template-columns: 1fr;
+      }
+
+      .login-card {
+        margin: 16px;
+        padding: 30px 24px;
+      }
+
+      .login-card h2 {
+        font-size: 2.45rem;
+      }
+
+      .sidebar-hero {
+        padding: 22px 20px;
+      }
+
+      .sidebar-hero h2 {
+        font-size: 2.2rem;
+      }
+
+      .sidebar-hero p {
+        font-size: 1rem;
+        line-height: 1.65;
+      }
+
+      .hero-chip {
+        font-size: 0.78rem;
+        padding: 9px 12px;
+      }
+
+      .sidebar h2 {
+        font-size: 1rem;
+      }
+
+      label {
+        font-size: 0.87rem;
+      }
+
+      input[type="file"],
+      input[type="text"],
+      select {
+        font-size: 16px;
+        padding: 13px 12px;
+      }
+
+      button.action-btn {
+        font-size: 15px;
+        padding: 13px;
+      }
+
+      .map-empty-state,
+      .route-summary,
+      .map-hint {
+        position: static;
+        transform: none;
+        margin: 16px;
+        max-width: none;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .login-card {
+        margin: 12px;
+        padding: 24px 18px;
+      }
+
+      .login-card h2 {
+        font-size: 2.2rem;
+      }
+
+      .login-card p {
+        font-size: 0.96rem;
+      }
+
+      .role-btn {
+        font-size: 1rem;
+        padding: 14px 14px;
+      }
+
+      header {
+        margin: 10px 10px 0;
+        padding: 14px 14px;
+      }
+
+      header h1 {
+        font-size: 1.62rem;
+      }
+
+      .main-content {
+        padding: 10px;
+      }
+
+      .sidebar-scroll {
+        padding: 12px;
+      }
+
+      .sidebar-hero {
+        padding: 18px 16px;
+      }
+
+      .sidebar-hero h2 {
+        font-size: 2rem;
+      }
+
+      .sidebar-hero p {
+        font-size: 0.95rem;
+      }
+
+      .hero-chip-row {
+        gap: 8px;
+      }
+
+      .hero-chip {
+        font-size: 0.74rem;
+        letter-spacing: 0.03em;
+      }
+
+      .sidebar section {
+        padding: 14px;
+        margin-bottom: 14px;
+      }
+
+      .map-panel {
+        min-height: 420px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- LOGIN OVERLAY -->
+  <div id="loginOverlay" class="glass">
+    <div class="login-card glass">
+      <h2>Smart Navigator</h2>
+      <p>Explore the campus with a warmer, clearer interface built for quick direction finding, cleaner mapping, and a more impressive first impression.</p>
+      <div class="login-highlights">
+        <div class="login-highlight">Route-ready campus map</div>
+        <div class="login-highlight">Quick navigation</div>
+        <div class="login-highlight">Visitor-friendly interface</div>
+      </div>
+
+      <div id="loginError" class="login-error"></div>
+
+      <button class="role-btn btn-admin" id="adminLoginBtn" onclick="loginAsAdmin()">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+        </svg>
+        Login as Admin
+      </button>
+
+      <div style="display:flex;align-items:center;gap:12px;margin:14px 0;">
+        <div style="flex:1;height:1px;background:rgba(255,248,239,0.18);"></div>
+        <span style="font-size:12px;color:rgba(255,248,239,0.45);font-weight:600;">OR</span>
+        <div style="flex:1;height:1px;background:rgba(255,248,239,0.18);"></div>
+      </div>
+
+      <button class="role-btn btn-user" onclick="loginAsUser()">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+        </svg>
+        Continue as Guest
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="appContainer">
+    <header class="glass">
+      <h1>
+        <svg width="24" height="24" fill="none" stroke="var(--primary)" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7">
+          </path>
+        </svg>
+        Campus Navigator
+        <span id="roleBadge" class="role-badge role-user">Guest</span>
+      </h1>
+      <button id="logoutBtn" onclick="logout()">Logout</button>
+    </header>
+
+    <div class="main-content">
+      <aside class="sidebar">
+        <div class="sidebar-scroll">
+          <div class="sidebar-hero">
+            <h2>Campus Flow</h2>
+            <p>Design your walking network, label important landmarks, and help students or visitors discover the campus with confidence.</p>
+            <div class="hero-chip-row">
+              <span class="hero-chip">Natural palette</span>
+              <span class="hero-chip">Cleaner UX</span>
+              <span class="hero-chip">Future-ready</span>
+            </div>
+          </div>
+
+          <!-- Admin Only: Map Upload -->
+          <section class="admin-only">
+            <h2>1. Setup Map</h2>
+            <label for="mapInput">Top-view Image</label>
+            <input type="file" id="mapInput" accept="image/*">
+            <small>Upload map. Canvas auto-sizes to image.</small>
+
+            <!-- Firebase Sync Status -->
+            <div id="firebaseSyncStatus" style="
+              display:flex; align-items:center; gap:8px;
+              padding:10px 14px; border-radius:12px; margin-top:8px;
+              background:rgba(63,107,75,0.08); border:1px solid rgba(63,107,75,0.2);
+              font-size:13px; font-weight:600; color:var(--primary);
+            ">
+              <span id="syncDot" style="width:8px;height:8px;border-radius:50%;background:#6b7280;flex-shrink:0;"></span>
+              <span id="syncStatusText">Connecting to Firebase...</span>
+            </div>
+
+            <button class="action-btn" id="syncNowBtn" onclick="syncAllToFirebase()" style="margin-top:10px; background:linear-gradient(135deg,#1a6fa8,#2589cc); box-shadow:0 10px 24px rgba(26,111,168,0.25);">
+              🔄 Sync All to Firebase
+            </button>
+            <button class="action-btn danger admin-only" id="clearDataBtn" style="margin-top:8px">Clear All Saved Data</button>
+          </section>
+
+          <!-- Admin Only: Edit Mode -->
+          <section class="admin-only">
+            <h2>2. Edit Network</h2>
+            <label for="modeSelect">Interaction Mode</label>
+            <select id="modeSelect">
+              <option value="view">View Only</option>
+              <option value="addNode">Add Node (Junction)</option>
+              <option value="connectRoad">Connect Nodes (Road)</option>
+              <option value="addLocation">Select Node for Location</option>
+            </select>
+            <small>Switch modes to map out the campus routes.</small>
+          </section>
+
+          <!-- Admin Only: Add Locations -->
+          <section class="admin-only" id="locationSection" style="opacity:0.5; pointer-events:none; transition:0.3s;">
+            <h2>3. Define Locations</h2>
+            <label>Selected Node: <span id="selNodeIndicator" style="color:var(--primary)">None</span></label>
+            <label for="locationNameInput" style="margin-top:8px">Location Name</label>
+            <input type="text" id="locationNameInput" placeholder="e.g. Main Gate, Library">
+            <button id="addLocationBtn" class="action-btn">Save Location</button>
+          </section>
+
+          <!-- User & Admin: Route Finder -->
+          <section>
+            <h2>Find Route</h2>
+            <label for="startLocationSelect">From</label>
+            <select id="startLocationSelect">
+              <option value="">Select start point</option>
+            </select>
+
+            <label for="endLocationSelect">To</label>
+            <select id="endLocationSelect">
+              <option value="">Select destination</option>
+            </select>
+
+            <button id="routeBtn" class="action-btn" style="margin-top:8px">Generate Route</button>
+            <button id="clearRouteBtn" class="action-btn danger">Clear Route</button>
+          </section>
+
+          <section>
+            <h2>System Logs</h2>
+            <div id="log"></div>
+          </section>
+        </div>
+      </aside>
+
+      <div class="map-panel" id="mapWrapper">
+
+        <div class="map-empty-state glass" id="mapEmptyState">
+          <div class="overlay-label">Map status</div>
+          <h3>Bring the campus to life</h3>
+          <p>Admins can upload a top-view image, place route nodes, connect roads, and define named locations for students and visitors.</p>
+        </div>
+        <!-- Canvas is manipulated via JS -->
+        <canvas id="mapCanvas"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ╔══════════════════════════════════════════════════════════════╗
+    // ║         🔥 PASTE YOUR NEW FIREBASE CONFIG HERE 🔥           ║
+    // ║                                                              ║
+    // ║  Steps:                                                      ║
+    // ║  1. Go to https://console.firebase.google.com/              ║
+    // ║  2. Create a new project (or open your new one)             ║
+    // ║  3. Project Settings → Your apps → Add Web App             ║
+    // ║  4. Copy the firebaseConfig object and paste it below       ║
+    // ║  5. In Firebase Console → Build → Realtime Database →       ║
+    // ║     Create database (Start in test mode for now)            ║
+    // ╚══════════════════════════════════════════════════════════════╝
+    const firebaseConfig = {
+      apiKey:            "AIzaSyAwARqvI7w9iOpyWexCUZm49qN8zmE0Bnk",
+      authDomain:        "iccubea-1a9c1.firebaseapp.com",
+      databaseURL:       "https://iccubea-1a9c1-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId:         "iccubea-1a9c1",
+      storageBucket:     "iccubea-1a9c1.firebasestorage.app",
+      messagingSenderId: "266940525411",
+      appId:             "1:266940525411:web:32cb637a430a3152308156",
+      measurementId:     "G-716VL6YF3F"
+    };
+
+    // ── Initialize Firebase ──────────────────────────────────────
+    let db = null;
+    let firebaseReady = false;
+
+    try {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.database();
+      firebaseReady = true;
+      console.log("✅ Firebase connected.");
+      // Update status indicator once DOM is ready
+      window.addEventListener('DOMContentLoaded', () => updateSyncStatus('connected', 'Firebase connected ✅'));
+      setTimeout(() => updateSyncStatus('connected', 'Firebase connected ✅'), 500);
+    } catch (e) {
+      console.warn("⚠️ Firebase not configured yet.", e);
+      setTimeout(() => updateSyncStatus('error', 'Firebase error — check config'), 500);
+    }
+
+    // System State
+    let currentUserRole = null; // 'admin' or 'user'
+
+    // Map Data
+    let bgImage = null;
+    let nodes = [];             // {id,x,y}
+    let roads = [];             // {fromId,toId}
+    let locations = [];         // {name,nodeId}
+
+    // Interaction State
+    let selectedNodeId = null;    // for connectRoad
+    let targetLocationNodeId = null; // for addLocation mode
+    let currentRoute = null;      // [nodeId,...]
+
+    // DOM Elements
+    const appContainer = document.getElementById('appContainer');
+    const loginOverlay = document.getElementById('loginOverlay');
+    const roleBadge = document.getElementById('roleBadge');
+    const loginErrorEl = document.getElementById('loginError');
+    const canvas = document.getElementById("mapCanvas");
+    const ctx = canvas.getContext("2d");
+    const mapWrapper = document.getElementById("mapWrapper");
+
+    const mapInput = document.getElementById("mapInput");
+    const modeSelect = document.getElementById("modeSelect");
+
+    const logEl = document.getElementById("log");
+
+    const locationSection = document.getElementById("locationSection");
+    const selNodeIndicator = document.getElementById("selNodeIndicator");
+    const locationNameInput = document.getElementById("locationNameInput");
+    const addLocationBtn = document.getElementById("addLocationBtn");
+
+    const startLocationSelect = document.getElementById("startLocationSelect");
+    const endLocationSelect = document.getElementById("endLocationSelect");
+    const routeBtn = document.getElementById("routeBtn");
+    const clearRouteBtn = document.getElementById("clearRouteBtn");
+    const clearDataBtn = document.getElementById("clearDataBtn");
+    const mapEmptyState = document.getElementById("mapEmptyState");
+
+    function updateDashboard() {
+      const hasMap = Boolean(bgImage);
+      mapEmptyState.style.display = hasMap ? 'none' : 'block';
+    }
+
+    function fitCanvasToPanel() {
+      if (!bgImage) return;
+
+      const panelW = mapWrapper.clientWidth;
+      const panelH = mapWrapper.clientHeight;
+      if (!panelW || !panelH || !canvas.width || !canvas.height) return;
+
+      const imageRatio = canvas.width / canvas.height;
+      const panelRatio = panelW / panelH;
+
+      if (imageRatio > panelRatio) {
+        canvas.style.width = `${panelW}px`;
+        canvas.style.height = `${Math.round(panelW / imageRatio)}px`;
+      } else {
+        canvas.style.height = `${panelH}px`;
+        canvas.style.width = `${Math.round(panelH * imageRatio)}px`;
+      }
+    }
+
+    // ------------- AUTHENTICATION & STORAGE ------------- //
+
+    function setLoginError(message = "") {
+      loginErrorEl.textContent = message;
+    }
+
+    function startSession(role) {
+      currentUserRole = role;
+      document.body.setAttribute('data-role', role);
+
+      loginOverlay.style.opacity = '0';
+      setTimeout(() => {
+        loginOverlay.style.visibility = 'hidden';
+        appContainer.style.display = 'flex';
+      }, 400);
+
+      roleBadge.className = `role-badge role-${role}`;
+      roleBadge.textContent = role === 'admin' ? 'Administrator' : 'Student/Visitor';
+
+      log(`Logged in as ${role.toUpperCase()}`);
+
+
+
+      loadData();
+    }
+
+    function resetSessionToLogin() {
+      loginOverlay.style.visibility = 'visible';
+      loginOverlay.style.opacity = '1';
+      appContainer.style.display = 'none';
+      currentUserRole = null;
+
+      document.body.removeAttribute('data-role');
+
+      // Clear runtime state
+      currentRoute = null;
+      selectedNodeId = null;
+      targetLocationNodeId = null;
+      if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+
+    function loginAsAdmin() {
+      setLoginError("");
+      startSession('admin');
+    }
+
+    // ── UPDATE SYNC STATUS INDICATOR ─────────────────────────────
+    function updateSyncStatus(state, message) {
+      const dot  = document.getElementById('syncDot');
+      const text = document.getElementById('syncStatusText');
+      if (!dot || !text) return;
+      const colors = { connected: '#22c55e', saving: '#f59e0b', error: '#ef4444', idle: '#6b7280' };
+      dot.style.background  = colors[state] || colors.idle;
+      text.textContent = message;
+    }
+
+    // ── MANUAL SYNC: Push everything to Firebase NOW ─────────────
+    function syncAllToFirebase() {
+      if (!firebaseReady) {
+        log('❌ Firebase not ready. Check your config.');
+        updateSyncStatus('error', 'Firebase not connected');
+        return;
+      }
+
+      updateSyncStatus('saving', 'Syncing...');
+      log('🔄 Syncing all data to Firebase...');
+
+      const mapData = { nodes, roads, locations };
+
+      const dataPromise = db.ref('mapData').set(mapData)
+        .then(() => log('✅ Nodes, roads & locations saved.'))
+        .catch(err => { log('❌ Data save error: ' + err.message); throw err; });
+
+      let imgPromise = Promise.resolve();
+      if (bgImage) {
+        try {
+          const maxDim = 2000;
+          let w = bgImage.naturalWidth, h = bgImage.naturalHeight;
+          if (w > maxDim || h > maxDim) {
+            const ratio = Math.min(maxDim / w, maxDim / h);
+            w = Math.floor(w * ratio); h = Math.floor(h * ratio);
+          }
+          const tmp = document.createElement('canvas');
+          tmp.width = w; tmp.height = h;
+          tmp.getContext('2d').drawImage(bgImage, 0, 0, w, h);
+          const dataUrl = tmp.toDataURL('image/jpeg', 0.65);
+          imgPromise = db.ref('mapImage').set(dataUrl)
+            .then(() => log('✅ Map image synced to Firebase.'))
+            .catch(err => { log('⚠️ Image sync error: ' + err.message); });
+        } catch(e) {
+          log('⚠️ Image too large to sync.');
+        }
+      } else {
+        log('ℹ️ No map image to sync.');
+      }
+
+      Promise.all([dataPromise, imgPromise])
+        .then(() => {
+          updateSyncStatus('connected', '✅ All data synced!');
+          log('🎉 Firebase sync complete.');
+        })
+        .catch(() => updateSyncStatus('error', 'Sync failed — check logs'));
+    }
+
+    function loginAsUser() {
+      setLoginError("");
+      startSession('user');
+    }
+
+    function logout() {
+      resetSessionToLogin();
+    }
+
+    // ── FIREBASE HELPERS ─────────────────────────────────────────
+
+    // Save all map state to your new Firebase Realtime Database
+    function saveData() {
+      if (currentUserRole !== 'admin') return;
+
+      if (!firebaseReady) {
+        log("⚠️ Firebase not configured. Paste your config in the script block.");
+        return;
+      }
+
+      const mapData = { nodes, roads, locations };
+
+      db.ref('mapData').set(mapData)
+        .then(() => log("✅ Map data saved to Firebase."))
+        .catch(err => log("❌ Save error: " + err.message));
+
+      // Save map image (compressed JPEG)
+      if (bgImage) {
+        try {
+          const maxDim = 2000;
+          let w = bgImage.naturalWidth, h = bgImage.naturalHeight;
+          if (w > maxDim || h > maxDim) {
+            const ratio = Math.min(maxDim / w, maxDim / h);
+            w = Math.floor(w * ratio); h = Math.floor(h * ratio);
+          }
+          const tmp = document.createElement('canvas');
+          tmp.width = w; tmp.height = h;
+          tmp.getContext('2d').drawImage(bgImage, 0, 0, w, h);
+          const dataUrl = tmp.toDataURL('image/jpeg', 0.6);
+
+          db.ref('mapImage').set(dataUrl)
+            .then(() => log("✅ Map image saved to Firebase."))
+            .catch(err => log("⚠️ Image save error: " + err.message));
+        } catch (e) {
+          log("⚠️ Image too large to save.");
+        }
+      }
+    }
+
+    // Load all map state from your new Firebase Realtime Database
+    function loadData() {
+      if (!firebaseReady) {
+        log("⚠️ Firebase not connected. Add your config to start saving data.");
+        updateDashboard();
+        refreshLocationSelects();
+        return;
+      }
+
+      log("Loading data from Firebase...");
+
+      const dataPromise = db.ref('mapData').once('value').then(snap => {
+        const data = snap.val();
+        nodes     = data?.nodes     || [];
+        roads     = data?.roads     || [];
+        locations = data?.locations || [];
+        refreshLocationSelects();
+        updateDashboard();
+      });
+
+      const imgPromise = db.ref('mapImage').once('value').then(snap => {
+        const stored = snap.val();
+        if (stored) {
+          return new Promise(resolve => {
+            const img = new Image();
+            img.onload = () => {
+              bgImage = img;
+              canvas.width  = img.naturalWidth;
+              canvas.height = img.naturalHeight;
+              fitCanvasToPanel();
+              updateDashboard();
+              drawScene();
+              log("✅ Map restored from Firebase.");
+              resolve();
+            };
+            img.onerror = () => { log("❌ Error loading map image."); resolve(); };
+            img.src = stored;
+          });
+        } else {
+          bgImage = null;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          canvas.width = 0; canvas.height = 0;
+          canvas.style.width = "0px"; canvas.style.height = "0px";
+          updateDashboard();
+          log("No map found. Upload one to get started.");
+        }
+      });
+
+      Promise.all([dataPromise, imgPromise])
+        .catch(err => log("❌ Load error: " + err.message));
+    }
+
+    // Clear all data from Firebase
+    clearDataBtn.addEventListener('click', () => {
+      if (!confirm("Clear ALL map data from Firebase? This cannot be undone.")) return;
+
+      nodes = []; roads = []; locations = []; bgImage = null;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      canvas.width = 0; canvas.height = 0;
+      refreshLocationSelects();
+      updateDashboard();
+
+      if (firebaseReady) {
+        db.ref().remove()
+          .then(() => log("✅ All cloud data cleared."))
+          .catch(err => log("❌ Clear error: " + err.message));
+      } else {
+        log("Local state cleared (Firebase not connected).");
+      }
+    });
+
+    // ------------- UTILS ------------- //
+
+    function log(msg) {
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      logEl.innerHTML = `<span style="color:#64748B">[${time}]</span> ${msg}<br>` + logEl.innerHTML;
+    }
+
+
+    // ------------- ADMIN: MAP & EDIT ------------- //
+
+    mapInput.addEventListener("change", e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const img = new Image();
+      img.onload = () => {
+        bgImage = img;
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        fitCanvasToPanel();
+        modeSelect.value = "addNode";
+        updateHint();
+        log("New map loaded.");
+        updateDashboard();
+        drawScene();
+        saveData(); // Save the new image
+      };
+      img.src = URL.createObjectURL(file);
+    });
+
+    window.addEventListener("resize", fitCanvasToPanel);
+
+    modeSelect.addEventListener("change", () => {
+      selectedNodeId = null;
+      targetLocationNodeId = null;
+      selNodeIndicator.textContent = "None";
+      locationSection.style.opacity = modeSelect.value === 'addLocation' ? '1' : '0.5';
+      locationSection.style.pointerEvents = modeSelect.value === 'addLocation' ? 'all' : 'none';
+      drawScene();
+    });
+
+    // Handle Canvas Clicks for Admin Tools
+    canvas.addEventListener("click", e => {
+      if (!bgImage || currentUserRole !== 'admin') return;
+
+      const rect = canvas.getBoundingClientRect();
+      // Calculate scale in case canvas is CSS-scaled (it's not currently, but safe)
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+
+      const rawX = e.clientX - rect.left;
+      const rawY = e.clientY - rect.top;
+
+      const x = rawX * scaleX;
+      const y = rawY * scaleY;
+
+      const mode = modeSelect.value;
+      if (mode === "addNode") {
+        const id = nodes.length ? Math.max(...nodes.map(n => n.id)) + 1 : 1;
+        nodes.push({ id, x, y });
+        log(`Node ${id} created.`);
+        updateDashboard();
+        saveData();
+        drawScene();
+      }
+      else if (mode === "connectRoad") {
+        const node = findNearestNode(x, y, 20); // 20px hit radius
+        if (!node) return;
+
+        if (selectedNodeId === null) {
+          selectedNodeId = node.id;
+          log(`Selected node ${node.id} for connection.`);
+        } else if (selectedNodeId === node.id) {
+          selectedNodeId = null; // deselect
+        } else {
+          // Check if road exists
+          const exists = roads.find(r => (r.fromId === selectedNodeId && r.toId === node.id) || (r.fromId === node.id && r.toId === selectedNodeId));
+          if (!exists) {
+            roads.push({ fromId: selectedNodeId, toId: node.id });
+            roads.push({ fromId: node.id, toId: selectedNodeId }); // bidirectional BFS
+            log(`Road connected.`);
+            updateDashboard();
+            saveData();
+          }
+          selectedNodeId = null;
+        }
+        drawScene();
+      }
+      else if (mode === "addLocation") {
+        const node = findNearestNode(x, y, 20);
+        if (node) {
+          targetLocationNodeId = node.id;
+          selNodeIndicator.textContent = `Node ${node.id}`;
+          locationNameInput.focus();
+          drawScene();
+        }
+      }
+    });
+
+    function findNearestNode(x, y, maxDist) {
+      let best = null, bestD = maxDist;
+      for (const n of nodes) {
+        const d = Math.hypot(n.x - x, n.y - y);
+        if (d <= bestD) { bestD = d; best = n; }
+      }
+      return best;
+    }
+
+    addLocationBtn.addEventListener("click", () => {
+      if (!targetLocationNodeId) return alert("Select a node on map first.");
+      const name = locationNameInput.value.trim();
+      if (!name) return alert("Enter location name.");
+      if (locations.find(l => l.name.toLowerCase() === name.toLowerCase())) return alert("Name exists.");
+
+      locations.push({ name, nodeId: targetLocationNodeId });
+      log(`Location '${name}' saved.`);
+
+      locationNameInput.value = "";
+      targetLocationNodeId = null;
+      selNodeIndicator.textContent = "None";
+
+      saveData();
+      refreshLocationSelects();
+      updateDashboard();
+      drawScene();
+    });
+
+    // ------------- USER & ADMIN: ROUTING ------------- //
+
+    function refreshLocationSelects() {
+      const createHtml = locs => `<option value="">Select location...</option>` +
+        locs.map(l => `<option value="${l.name}">${l.name}</option>`).join('');
+
+      const locHtml = createHtml(locations);
+
+      // Preserve current selections if possible
+      const curStart = startLocationSelect.value;
+      const curEnd = endLocationSelect.value;
+
+      startLocationSelect.innerHTML = locHtml;
+      endLocationSelect.innerHTML = locHtml;
+
+      if (locations.find(l => l.name === curStart)) startLocationSelect.value = curStart;
+      if (locations.find(l => l.name === curEnd)) endLocationSelect.value = curEnd;
+    }
+
+    function bfs(startId, endId) {
+      const queue = [[startId]];
+      const visited = new Set([startId]);
+
+      while (queue.length) {
+        const path = queue.shift();
+        const last = path[path.length - 1];
+        if (last === endId) return path;
+
+        const neighbors = roads.filter(r => r.fromId === last).map(r => r.toId);
+
+        for (const nb of neighbors) {
+          if (!visited.has(nb)) {
+            visited.add(nb);
+            queue.push([...path, nb]);
+          }
+        }
+      }
+      return null;
+    }
+
+    routeBtn.addEventListener("click", () => {
+      const startName = startLocationSelect.value;
+      const endName = endLocationSelect.value;
+
+      if (!startName || !endName) return alert("Select both locations.");
+      if (startName === endName) return alert("Select different locations.");
+
+      const startLoc = locations.find(l => l.name === startName);
+      const endLoc = locations.find(l => l.name === endName);
+
+      const path = bfs(startLoc.nodeId, endLoc.nodeId);
+      if (!path) {
+        log(`❌ No route found from ${startName} to ${endName}.`);
+        currentRoute = null;
+        alert("No configured road connects these points.");
+      } else {
+        currentRoute = path;
+        log(`✅ Route generated: ${path.length - 1} segments.`);
+      }
+      drawScene();
+    });
+
+    clearRouteBtn.addEventListener("click", () => {
+      currentRoute = null;
+      startLocationSelect.value = "";
+      endLocationSelect.value = "";
+      drawScene();
+    });
+
+    // ------------- RENDER ENGINE ------------- //
+
+    function drawScene() {
+      if (!bgImage) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.globalAlpha = 1.0;
+      ctx.drawImage(bgImage, 0, 0);
+
+      // Map overlay dimming for contrast
+      ctx.fillStyle = "rgba(246, 239, 224, 0.2)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw Roads (Subtle if no route, otherwise keep normal)
+      ctx.lineCap = "round";
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = "rgba(101, 79, 51, 0.34)";
+
+      // Draw one direction only perfectly
+      const drawnRoads = new Set();
+      for (const r of roads) {
+        const hash = [r.fromId, r.toId].sort().join('-');
+        if (drawnRoads.has(hash)) continue;
+        drawnRoads.add(hash);
+
+        const a = nodes.find(n => n.id === r.fromId);
+        const b = nodes.find(n => n.id === r.toId);
+        if (!a || !b) continue;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+
+      // Draw Nodes
+      const showNodes = currentUserRole === 'admin';
+      if (showNodes) {
+        for (const n of nodes) {
+          // Normal node
+          ctx.fillStyle = "#f7efe2";
+          ctx.strokeStyle = "#6d8b72";
+          ctx.lineWidth = 2;
+
+          // Highlight states
+          if (n.id === selectedNodeId) {
+            ctx.strokeStyle = "#3f6b4b";
+            ctx.fillStyle = "rgba(63, 107, 75, 0.18)";
+            ctx.lineWidth = 4;
+          } else if (n.id === targetLocationNodeId) {
+            ctx.strokeStyle = "#b9783f";
+            ctx.fillStyle = "rgba(185, 120, 63, 0.18)";
+            ctx.lineWidth = 4;
+          }
+
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, (n.id === selectedNodeId || n.id === targetLocationNodeId) ? 8 : 4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+      }
+
+      // Draw Route
+      if (currentRoute && currentRoute.length > 1) {
+        // Glow effect - bright yellow glow
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = "rgba(255, 223, 0, 0.8)";
+
+        ctx.lineWidth = 10;
+        ctx.strokeStyle = "#FFD700"; // Bright gold/yellow
+
+        ctx.beginPath();
+        const startNode = nodes.find(n => n.id === currentRoute[0]);
+        if (startNode) ctx.moveTo(startNode.x, startNode.y);
+
+        for (let i = 1; i < currentRoute.length; i++) {
+          const n = nodes.find(nd => nd.id === currentRoute[i]);
+          if (n) ctx.lineTo(n.x, n.y);
+        }
+        ctx.stroke();
+        ctx.shadowBlur = 0; // Reset
+
+        // Start/End Points
+        const endNode = nodes.find(n => n.id === currentRoute[currentRoute.length - 1]);
+
+        if (startNode) {
+          ctx.fillStyle = "#FFD700"; // Bright yellow
+          ctx.strokeStyle = "#000";
+          ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.arc(startNode.x, startNode.y, 10, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        }
+        if (endNode) {
+          ctx.fillStyle = "#FFA500"; // Orange for end
+          ctx.strokeStyle = "#000";
+          ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.arc(endNode.x, endNode.y, 10, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        }
+      }
+
+      // Draw Locations Labels
+      ctx.font = "700 13px Manrope, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      locations.forEach(loc => {
+        const n = nodes.find(nn => nn.id === loc.nodeId);
+        if (!n) return;
+
+        // Tag background
+        const padding = 6;
+        const metrics = ctx.measureText(loc.name);
+        const w = metrics.width + padding * 2;
+        const h = 24;
+        const x = n.x - w / 2;
+        const y = n.y - h - 12; // Above node
+
+        // Shadow
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = "rgba(73, 54, 35, 0.22)";
+
+        // Box
+        ctx.fillStyle = "rgba(255, 251, 244, 0.92)";
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, 6);
+        ctx.fill();
+
+        // Pointer triangle
+        ctx.beginPath();
+        ctx.moveTo(n.x - 6, y + h);
+        ctx.lineTo(n.x + 6, y + h);
+        ctx.lineTo(n.x, y + h + 6);
+        ctx.fill();
+
+        // Text
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "#2d241c";
+        ctx.fillText(loc.name, n.x, y + h / 2);
+
+        // Map pin icon on node
+        ctx.fillStyle = "#ad6542";
+        ctx.beginPath(); ctx.arc(n.x, n.y, 4, 0, Math.PI * 2); ctx.fill();
+      });
+    }
+  </script>
+</body>
+
+</html>
