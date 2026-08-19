@@ -464,6 +464,97 @@
       text-transform: uppercase;
     }
 
+    .conference-overview {
+      margin: -2px 0 16px;
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .conference-accordion {
+      display: grid;
+      gap: 10px;
+    }
+
+    .conference-item {
+      border: 1px solid rgba(92, 74, 52, 0.16);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.56);
+      overflow: hidden;
+    }
+
+    .conference-item summary {
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px;
+      color: var(--text-main);
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .conference-item summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .conference-item summary::after {
+      content: "+";
+      display: grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(63, 107, 75, 0.1);
+      color: var(--primary);
+      font-size: 18px;
+      line-height: 1;
+      flex: 0 0 auto;
+    }
+
+    .conference-item[open] summary::after {
+      content: "-";
+    }
+
+    .conference-detail {
+      padding: 0 14px 14px;
+      color: var(--text-muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .conference-detail ul {
+      padding-left: 18px;
+      margin-bottom: 12px;
+    }
+
+    .conference-detail li {
+      margin-bottom: 6px;
+    }
+
+    .destination-btn {
+      width: 100%;
+      border: 1px solid rgba(63, 107, 75, 0.22);
+      background: rgba(63, 107, 75, 0.08);
+      color: var(--primary);
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, transform 0.1s;
+    }
+
+    .destination-btn:hover {
+      background: var(--primary);
+      color: white;
+    }
+
+    .destination-btn:active {
+      transform: scale(0.98);
+    }
+
     .sidebar section {
       background: rgba(255, 252, 247, 0.78);
       border: 1px solid var(--border-color);
@@ -1023,15 +1114,45 @@
     <div class="main-content">
       <aside class="sidebar">
         <div class="sidebar-scroll">
-          <div class="sidebar-hero">
-            <h2>Campus Flow</h2>
-            <p>Design your walking network, label important landmarks, and help students or visitors discover the campus with confidence.</p>
-            <div class="hero-chip-row">
-              <span class="hero-chip">Natural palette</span>
-              <span class="hero-chip">Cleaner UX</span>
-              <span class="hero-chip">Future-ready</span>
+          <section>
+            <h2>Conference Information</h2>
+            <p class="conference-overview">Select an item below to view the location details. Use the destination button to prepare the route finder when the venue is available on the saved map.</p>
+
+            <div class="conference-accordion">
+              <details class="conference-item" open>
+                <summary>Registration</summary>
+                <div class="conference-detail">
+                  <ul>
+                    <li><strong>Location:</strong> Ground floor, Old Reading Hall, 6th Building.</li>
+                    <li><strong>Use:</strong> Delegate check-in, badges, and conference desk support.</li>
+                  </ul>
+                  <button class="destination-btn" type="button" onclick="setConferenceDestination(['6th Building'])">Use as destination</button>
+                </div>
+              </details>
+
+              <details class="conference-item">
+                <summary>Inauguration</summary>
+                <div class="conference-detail">
+                  <ul>
+                    <li><strong>Location:</strong> 5th floor, Architecture Building.</li>
+                    <li><strong>Use:</strong> Opening session and formal welcome.</li>
+                  </ul>
+                  <button class="destination-btn" type="button" onclick="setConferenceDestination(['Architecture Building'])">Use as destination</button>
+                </div>
+              </details>
+
+              <details class="conference-item">
+                <summary>Valedictory Ceremony</summary>
+                <div class="conference-detail">
+                  <ul>
+                    <li><strong>Location:</strong> Seminar Hall, 9th Building.</li>
+                    <li><strong>Use:</strong> Closing ceremony and final conference gathering.</li>
+                  </ul>
+                  <button class="destination-btn" type="button" onclick="setConferenceDestination(['Seminar Hall', '9th Building'])">Use as destination</button>
+                </div>
+              </details>
             </div>
-          </div>
+          </section>
 
           <!-- Admin Only: Map Upload -->
           <section class="admin-only">
@@ -1588,6 +1709,31 @@
 
       if (locations.find(l => l.name === curStart)) startLocationSelect.value = curStart;
       if (locations.find(l => l.name === curEnd)) endLocationSelect.value = curEnd;
+    }
+
+    function setConferenceDestination(destinationNames) {
+      const names = Array.isArray(destinationNames) ? destinationNames : [destinationNames];
+      const normalizedLocations = locations.map(location => ({
+        location,
+        name: location.name.trim().toLowerCase()
+      }));
+      const normalizedNames = names.map(name => name.trim().toLowerCase());
+      const destination = normalizedLocations.find(({ name }) =>
+        normalizedNames.some(searchName => name === searchName)
+      )?.location || normalizedLocations.find(({ name }) =>
+        normalizedNames.every(searchName => name.includes(searchName))
+      )?.location || normalizedLocations.find(({ name }) =>
+        normalizedNames.some(searchName => name.includes(searchName))
+      )?.location;
+
+      if (!destination) {
+        alert(`The ${names.join(' / ')} node is not available in the saved map locations yet.`);
+        return;
+      }
+
+      endLocationSelect.value = destination.name;
+      endLocationSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      log(`Destination selected: ${destination.name}`);
     }
 
     function bfs(startId, endId) {
